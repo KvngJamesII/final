@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, History, RefreshCw } from "lucide-react";
+import { ArrowLeft, History, RefreshCw, Copy, Check, MessageCircle, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Country, SmsMessage } from "@shared/schema";
@@ -19,6 +19,33 @@ export default function CountryPage() {
   const [currentNumber, setCurrentNumber] = useState<string>("");
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState<number | null>(null);
+  const [justCopied, setJustCopied] = useState(false);
+
+  // Extract number without country code (e.g., "+1234567890" -> "1234567890")
+  const getNumberWithoutCountryCode = (fullNumber: string) => {
+    if (fullNumber.startsWith("+")) {
+      return fullNumber.substring(1);
+    }
+    return fullNumber;
+  };
+
+  const copyToClipboard = (fullNumber: string) => {
+    const numberOnly = getNumberWithoutCountryCode(fullNumber);
+    navigator.clipboard.writeText(numberOnly).then(() => {
+      setJustCopied(true);
+      toast({
+        title: "Copied!",
+        description: `Number copied: ${numberOnly}`,
+      });
+      setTimeout(() => setJustCopied(false), 2000);
+    }).catch(() => {
+      toast({
+        title: "Error",
+        description: "Failed to copy number",
+        variant: "destructive",
+      });
+    });
+  };
 
   const { data: country } = useQuery<Country>({
     queryKey: ["/api/countries", countryId],
@@ -123,33 +150,76 @@ export default function CountryPage() {
 
         {/* Number Display */}
         <div className="max-w-3xl mx-auto space-y-8">
-          <Card>
+          <Card className="overflow-hidden">
             <CardContent className="pt-8">
               {currentNumber ? (
                 <div className="space-y-6">
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-2">Your Number</p>
-                    <p className="text-4xl md:text-5xl font-mono font-bold" data-testid="text-phone-number">
-                      {currentNumber}
-                    </p>
+                  {/* Number Display Card */}
+                  <div className="bg-gradient-to-br from-primary/10 via-transparent to-accent/10 rounded-lg p-8 border border-primary/20">
+                    <div className="text-center space-y-4">
+                      <div className="flex justify-center">
+                        <div className="p-3 bg-primary/10 rounded-full">
+                          <Zap className="w-6 h-6 text-primary" />
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground font-medium uppercase tracking-wide">Your Virtual Number</p>
+                      
+                      {/* Clickable Number */}
+                      <button
+                        onClick={() => copyToClipboard(currentNumber)}
+                        className="group relative w-full rounded-lg hover-elevate transition-all duration-200"
+                        data-testid="button-copy-number"
+                      >
+                        <div className="p-6 rounded-lg border border-primary/30 bg-background/50 group-hover:border-primary/50">
+                          <p className="font-mono text-5xl md:text-6xl font-bold text-primary mb-3" data-testid="text-phone-number">
+                            {currentNumber}
+                          </p>
+                          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                            {justCopied ? (
+                              <>
+                                <Check className="w-4 h-4 text-accent" />
+                                <span>Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-4 h-4" />
+                                <span>Click to copy (without country code)</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    </div>
                   </div>
 
-                  <Button
-                    onClick={() => getNumberMutation.mutate()}
-                    disabled={getNumberMutation.isPending}
-                    className="w-full"
-                    data-testid="button-next-number"
-                  >
-                    {getNumberMutation.isPending ? "Loading..." : "Next Number"}
-                  </Button>
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-1 gap-3">
+                    <Button
+                      onClick={() => getNumberMutation.mutate()}
+                      disabled={getNumberMutation.isPending}
+                      size="lg"
+                      data-testid="button-next-number"
+                    >
+                      {getNumberMutation.isPending ? "Loading..." : "Get Another Number"}
+                    </Button>
+                  </div>
                 </div>
               ) : (
-                <div className="text-center space-y-4">
-                  <p className="text-muted-foreground">Click to get a number from {country?.name}</p>
+                <div className="text-center space-y-6 py-8">
+                  <div className="flex justify-center">
+                    <div className="p-4 bg-accent/10 rounded-full">
+                      <Zap className="w-8 h-8 text-accent" />
+                    </div>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold mb-2">Get Your Number</h2>
+                    <p className="text-muted-foreground">Receive SMS instantly on a virtual number from {country?.name}</p>
+                  </div>
                   <Button
                     onClick={() => getNumberMutation.mutate()}
                     disabled={getNumberMutation.isPending}
                     size="lg"
+                    className="w-full bg-gradient-to-r from-primary to-accent"
                     data-testid="button-get-number"
                   >
                     {getNumberMutation.isPending ? "Loading..." : "Get Number (Free)"}
@@ -161,11 +231,14 @@ export default function CountryPage() {
 
           {/* SMS Tab */}
           {currentNumber && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>SMS Messages</CardTitle>
-                  <div className="flex items-center gap-4">
+            <Card className="overflow-hidden">
+              <CardHeader className="border-b bg-muted/30">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5 text-primary" />
+                    <CardTitle>SMS Messages</CardTitle>
+                  </div>
+                  <div className="flex items-center gap-4 w-full md:w-auto">
                     <div className="flex items-center gap-2">
                       <Switch
                         id="auto-refresh"
@@ -173,8 +246,8 @@ export default function CountryPage() {
                         onCheckedChange={setAutoRefresh}
                         data-testid="switch-auto-refresh"
                       />
-                      <Label htmlFor="auto-refresh" className="text-sm cursor-pointer">
-                        Auto-refresh (10s)
+                      <Label htmlFor="auto-refresh" className="text-sm cursor-pointer whitespace-nowrap">
+                        Auto-refresh
                       </Label>
                     </div>
                     <Button
@@ -191,33 +264,41 @@ export default function CountryPage() {
                       ) : (
                         <>
                           <RefreshCw className="mr-2 h-4 w-4" />
-                          Check New SMS
+                          Check SMS
                         </>
                       )}
                     </Button>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="pt-6">
+                <div className="space-y-3">
                   {smsMessages && smsMessages.length > 0 ? (
                     smsMessages.map((sms) => (
                       <div
                         key={sms.id}
-                        className="p-4 rounded-lg border space-y-2"
+                        className="p-4 rounded-lg border bg-muted/30 hover-elevate transition-all space-y-3"
                         data-testid={`sms-message-${sms.id}`}
                       >
-                        <div className="font-semibold text-sm">From: {sms.sender}</div>
-                        <div className="text-sm">{sms.message}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(sms.receivedAt).toLocaleString()}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="font-semibold text-sm text-foreground">From: {sms.sender}</div>
+                          <div className="text-xs text-muted-foreground whitespace-nowrap">
+                            {new Date(sms.receivedAt).toLocaleString()}
+                          </div>
                         </div>
+                        <div className="text-sm leading-relaxed break-words">{sms.message}</div>
                       </div>
                     ))
                   ) : (
-                    <p className="text-center text-muted-foreground py-8">
-                      No messages yet. Click "Check New SMS" to fetch messages.
-                    </p>
+                    <div className="text-center py-12">
+                      <div className="flex justify-center mb-4">
+                        <div className="p-3 bg-muted rounded-full">
+                          <MessageCircle className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      </div>
+                      <p className="text-muted-foreground">No messages yet</p>
+                      <p className="text-sm text-muted-foreground mt-1">Click "Check SMS" to fetch new messages</p>
+                    </div>
                   )}
                 </div>
               </CardContent>
