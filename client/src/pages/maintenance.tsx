@@ -1,8 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
 
 export default function Maintenance() {
   return (
@@ -32,13 +30,6 @@ export default function Maintenance() {
             <p className="text-sm text-muted-foreground">
               We'll be back shortly. Thank you for your patience!
             </p>
-            <div className="pt-4">
-              <Link href="/login">
-                <Button variant="outline" size="sm">
-                  Admin Login
-                </Button>
-              </Link>
-            </div>
           </CardContent>
         </Card>
       </div>
