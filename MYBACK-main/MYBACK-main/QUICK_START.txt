@@ -1,0 +1,46 @@
+═══════════════════════════════════════════════════════════════
+  OTP KING BACKEND - RAILWAY DEPLOYMENT QUICK START
+═══════════════════════════════════════════════════════════════
+
+WHAT'S INCLUDED:
+✓ Backend server code (Express.js + Node.js)
+✓ Database schema (Drizzle ORM + PostgreSQL)
+✓ All API routes
+✓ Session management
+✓ Deployment configuration
+
+DEPLOYMENT STEPS:
+
+1. PUSH TO GITHUB
+   - Push this backend code to your GitHub repository
+   - Or create a new repo from this folder
+
+2. GO TO RAILWAY (https://railway.app)
+   - Create new project
+   - Click "Deploy from GitHub"
+   - Select your repository
+   - Railway auto-detects and deploys
+
+3. ADD ENVIRONMENT VARIABLES
+   In Railway dashboard → Variables:
+   
+   DATABASE_URL=postgresql://postgres.wmexjnwdfwegodysvzog:isr828u2@aws-1-eu-north-1.pooler.supabase.com:6543/postgres
+   SESSION_SECRET=f7648ae3e403cc9fafe3a6521f8c4664a69c6e51423ab501c978d31a675fbf48
+   VITE_PAYSTACK_KEY=pk_live_efa6b01e6086e21bda6762026dcaec02dd4f669a
+   PAYSTACK_KEY=pk_live_efa6b01e6086e21bda6762026dcaec02dd4f669a
+
+4. WAIT FOR DEPLOYMENT
+   - Railway will build and deploy automatically
+   - Check "Deployments" tab for status
+
+5. GET YOUR PUBLIC URL
+   - Click service → Settings → Copy "Public URL"
+   - Example: https://your-app-xyz.railway.app
+   - SAVE THIS - you need it for Vercel!
+
+═══════════════════════════════════════════════════════════════
+FRONTEND (Vercel) WILL CONNECT TO:
+Your Railway URL above
+
+NEED HELP? See RAILWAY_DEPLOYMENT.md for detailed guide
+═══════════════════════════════════════════════════════════════
