@@ -14,8 +14,8 @@ export function AnnouncementBanner() {
 
   return (
     <div className="relative h-12 overflow-hidden border-b bg-primary/5">
-      <div className="absolute inset-0 flex items-center">
-        <div className="animate-marquee whitespace-nowrap px-4">
+      <div className="absolute inset-0 flex items-center whitespace-nowrap">
+        <div className="animate-marquee inline-flex items-center px-4">
           {activeAnnouncements.map((announcement, index) => (
             <span key={announcement.id} className="inline-flex items-center text-sm font-medium">
               {announcement.content}
@@ -25,7 +25,7 @@ export function AnnouncementBanner() {
             </span>
           ))}
         </div>
-        <div className="animate-marquee2 absolute top-0 whitespace-nowrap px-4">
+        <div className="animate-marquee2 inline-flex items-center px-4">
           {activeAnnouncements.map((announcement, index) => (
             <span key={announcement.id} className="inline-flex items-center text-sm font-medium">
               {announcement.content}
