@@ -214,7 +214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
 
-    passport.authenticate("local", async (err: any, user: User, info: any) => {
+    passport.authenticate("local", (err: any, user: User, info: any) => {
       if (err) {
         return res.status(500).json({ message: "Authentication error" });
       }
@@ -222,33 +222,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: info?.message || "Authentication failed" });
       }
 
-      req.login(user, async (loginErr) => {
+      req.login(user, (loginErr) => {
         if (loginErr) {
           return res.status(500).json({ message: "Login failed" });
         }
 
-        // Check for daily login reward
-        const now = new Date();
-        const lastLogin = user.lastLoginDate ? new Date(user.lastLoginDate) : null;
+        // Async operations after login
+        (async () => {
+          try {
+            // Check for daily login reward
+            const now = new Date();
+            const lastLogin = user.lastLoginDate ? new Date(user.lastLoginDate) : null;
 
-        const shouldReward = !lastLogin || 
-          (now.getTime() - lastLogin.getTime()) > 24 * 60 * 60 * 1000;
+            const shouldReward = !lastLogin || 
+              (now.getTime() - lastLogin.getTime()) > 24 * 60 * 60 * 1000;
 
-        if (shouldReward) {
-          await storage.updateUser(user.id, {
-            credits: (user.credits || 0) + 50,
-            lastLoginDate: now,
-          });
+            if (shouldReward) {
+              await storage.updateUser(user.id, {
+                credits: (user.credits || 0) + 50,
+                lastLoginDate: now,
+              });
 
-          await storage.createNotification({
-            userId: user.id,
-            title: "Daily Reward!",
-            message: "You earned 50 credits for logging in today!",
-            isBroadcast: false,
-          });
-        }
+              await storage.createNotification({
+                userId: user.id,
+                title: "Daily Reward!",
+                message: "You earned 50 credits for logging in today!",
+                isBroadcast: false,
+              });
+            }
 
-        res.json({ success: true, isAdmin: user.isAdmin });
+            res.json({ success: true, isAdmin: user.isAdmin });
+          } catch (error) {
+            // If anything fails, still allow login but don't send response if already sent
+            if (!res.headersSent) {
+              res.json({ success: true, isAdmin: user.isAdmin });
+            }
+          }
+        })();
       });
     })(req, res, next);
   });
