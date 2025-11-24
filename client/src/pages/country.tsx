@@ -21,16 +21,17 @@ export default function CountryPage() {
   const [refreshInterval, setRefreshInterval] = useState<number | null>(null);
   const [justCopied, setJustCopied] = useState(false);
 
-  // Extract number without country code (e.g., "+1234567890" -> "1234567890")
-  const getNumberWithoutCountryCode = (fullNumber: string) => {
-    if (fullNumber.startsWith("+")) {
-      return fullNumber.substring(1);
+  // Extract number without country code (e.g., "+12125551234" with code "+1" -> "2125551234")
+  const getNumberWithoutCountryCode = (fullNumber: string, countryCode: string) => {
+    // Remove the country code from the start of the number
+    if (fullNumber.startsWith(countryCode)) {
+      return fullNumber.substring(countryCode.length);
     }
     return fullNumber;
   };
 
   const copyToClipboard = (fullNumber: string) => {
-    const numberOnly = getNumberWithoutCountryCode(fullNumber);
+    const numberOnly = getNumberWithoutCountryCode(fullNumber, country?.code || "");
     navigator.clipboard.writeText(numberOnly).then(() => {
       setJustCopied(true);
       toast({
