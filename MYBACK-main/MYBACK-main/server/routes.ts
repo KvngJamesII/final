@@ -3,23 +3,23 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
-import session from "express-session";
-import PgSession from "connect-pg-simple";
-import passport from "passport";
-import { Strategy as LocalStrategy } from "passport-local";
+import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import axios from "axios";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { loginSchema, signupSchema } from "@shared/schema";
 import type { User, Country } from "@shared/schema";
-import { db, pool } from "./db";
+import { db } from "./db";
 import { sql } from "drizzle-orm";
 
 // Extend Express Request to include user
 declare global {
   namespace Express {
     interface User extends import("@shared/schema").User {}
+    interface Request {
+      user?: User;
+    }
   }
 }
 
@@ -30,28 +30,88 @@ function getClientIP(req: Request): string {
          'unknown';
 }
 
+// Helper to generate JWT token
+function generateToken(user: User): string {
+  const secret = process.env.SESSION_SECRET || "otp-king-secret-key-change-in-production";
+  return jwt.sign(
+    {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      credits: user.credits,
+      referralCode: user.referralCode,
+      successfulReferrals: user.successfulReferrals,
+      createdAt: user.createdAt,
+      isModerator: user.isModerator,
+      isAdmin: user.isAdmin,
+      isBanned: user.isBanned,
+    },
+    secret,
+    { expiresIn: "7d" }
+  );
+}
+
 // Middleware to check if user is authenticated
 function requireAuth(req: Request, res: Response, next: NextFunction) {
-  if (req.isAuthenticated()) {
-    return next();
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Not authenticated" });
   }
-  res.status(401).json({ message: "Not authenticated" });
+
+  const token = authHeader.substring(7); // Remove "Bearer " prefix
+  const secret = process.env.SESSION_SECRET || "otp-king-secret-key-change-in-production";
+
+  try {
+    const decoded = jwt.verify(token, secret) as User;
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({ message: "Invalid token" });
+  }
 }
 
 // Middleware to check if user is admin
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (req.isAuthenticated() && req.user?.isAdmin) {
-    return next();
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Not authenticated" });
   }
-  res.status(403).json({ message: "Admin access required" });
+
+  const token = authHeader.substring(7);
+  const secret = process.env.SESSION_SECRET || "otp-king-secret-key-change-in-production";
+
+  try {
+    const decoded = jwt.verify(token, secret) as User;
+    if (!decoded.isAdmin) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({ message: "Invalid token" });
+  }
 }
 
 // Middleware to check if user is moderator
 function requireModerator(req: Request, res: Response, next: NextFunction) {
-  if (req.isAuthenticated() && (req.user?.isModerator || req.user?.isAdmin)) {
-    return next();
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Not authenticated" });
   }
-  res.status(403).json({ message: "Moderator access required" });
+
+  const token = authHeader.substring(7);
+  const secret = process.env.SESSION_SECRET || "otp-king-secret-key-change-in-production";
+
+  try {
+    const decoded = jwt.verify(token, secret) as User;
+    if (!decoded.isModerator && !decoded.isAdmin) {
+      return res.status(403).json({ message: "Moderator access required" });
+    }
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({ message: "Invalid token" });
+  }
 }
 
 // Rate limiters
