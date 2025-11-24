@@ -227,38 +227,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(500).json({ message: "Login failed" });
         }
 
-        // Async operations after login
-        (async () => {
-          try {
-            // Check for daily login reward
-            const now = new Date();
-            const lastLogin = user.lastLoginDate ? new Date(user.lastLoginDate) : null;
-
-            const shouldReward = !lastLogin || 
-              (now.getTime() - lastLogin.getTime()) > 24 * 60 * 60 * 1000;
-
-            if (shouldReward) {
-              await storage.updateUser(user.id, {
-                credits: (user.credits || 0) + 50,
-                lastLoginDate: now,
-              });
-
-              await storage.createNotification({
-                userId: user.id,
-                title: "Daily Reward!",
-                message: "You earned 50 credits for logging in today!",
-                isBroadcast: false,
-              });
-            }
-
-            res.json({ success: true, isAdmin: user.isAdmin });
-          } catch (error) {
-            // If anything fails, still allow login but don't send response if already sent
-            if (!res.headersSent) {
-              res.json({ success: true, isAdmin: user.isAdmin });
-            }
+        // Save session explicitly before responding
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            return res.status(500).json({ message: "Failed to save session" });
           }
-        })();
+
+          // Async operations after login
+          (async () => {
+            try {
+              // Check for daily login reward
+              const now = new Date();
+              const lastLogin = user.lastLoginDate ? new Date(user.lastLoginDate) : null;
+
+              const shouldReward = !lastLogin || 
+                (now.getTime() - lastLogin.getTime()) > 24 * 60 * 60 * 1000;
+
+              if (shouldReward) {
+                await storage.updateUser(user.id, {
+                  credits: (user.credits || 0) + 50,
+                  lastLoginDate: now,
+                });
+
+                await storage.createNotification({
+                  userId: user.id,
+                  title: "Daily Reward!",
+                  message: "You earned 50 credits for logging in today!",
+                  isBroadcast: false,
+                });
+              }
+
+              res.json({ success: true, isAdmin: user.isAdmin });
+            } catch (error) {
+              // If anything fails, still allow login but don't send response if already sent
+              if (!res.headersSent) {
+                res.json({ success: true, isAdmin: user.isAdmin });
+              }
+            }
+          })();
+        });
       });
     })(req, res, next);
   });
