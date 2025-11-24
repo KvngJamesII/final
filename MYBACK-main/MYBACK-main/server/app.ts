@@ -38,7 +38,7 @@ app.use((req, res, next) => {
     "http://localhost:5000",
     "https://localhost:3000",
     "https://localhost:5000",
-    "https://tayad.vercel.app",
+    "https://otpkings.vercel.app",
   ];
   
   if (!origin || allowedOrigins.includes(origin) || origin?.includes("vercel.app")) {
