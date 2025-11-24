@@ -32,17 +32,21 @@ export default function CountryPage() {
 
   const getNumberMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("POST", `/api/countries/${countryId}/use-number`, {}) as Promise<{ number: string }>;
+      const response = await apiRequest("POST", `/api/countries/${countryId}/use-number`, {});
+      console.log("Get number response:", response);
+      return response as { number: string };
     },
     onSuccess: (data: { number: string }) => {
+      console.log("Setting current number to:", data.number);
       setCurrentNumber(data.number);
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/countries", countryId] });
     },
     onError: (error: any) => {
+      console.error("Get number error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to get number",
+        description: error.response?.data?.message || error.message || "Failed to get number",
         variant: "destructive",
       });
     },
@@ -147,7 +151,10 @@ export default function CountryPage() {
                 <div className="text-center space-y-4">
                   <p className="text-muted-foreground">Click to get a number from {country?.name}</p>
                   <Button
-                    onClick={() => getNumberMutation.mutate()}
+                    onClick={() => {
+                      console.log("Get Number button clicked, countryId:", countryId);
+                      getNumberMutation.mutate();
+                    }}
                     disabled={getNumberMutation.isPending}
                     size="lg"
                     data-testid="button-get-number"
