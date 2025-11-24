@@ -2,7 +2,7 @@ import { Bell, User, Smartphone, Gem, Wallet, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "./theme-toggle";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +15,7 @@ import type { User as UserType, Notification } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export function Header() {
+  const [, setLocation] = useLocation();
   const { data: user } = useQuery<UserType>({ 
     queryKey: ["/api/auth/me"],
     retry: false,
@@ -33,12 +34,26 @@ export function Header() {
     },
   });
 
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/auth/logout", {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      setLocation("/login");
+    },
+  });
+
   const unreadCount = notifications?.filter((n) => !n.isRead).length || 0;
 
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.isRead) {
       markReadMutation.mutate(notification.id);
     }
+  };
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
   };
 
   return (
@@ -67,12 +82,8 @@ export function Header() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <form action="/api/auth/logout" method="post">
-                      <button type="submit" className="w-full text-left" data-testid="button-logout">
-                        Logout
-                      </button>
-                    </form>
+                  <DropdownMenuItem onClick={handleLogout} data-testid="button-logout">
+                    Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
