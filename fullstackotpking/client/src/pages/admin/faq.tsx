@@ -24,7 +24,7 @@ export function FaqTab() {
   const [formData, setFormData] = useState({ question: "", answer: "", displayOrder: 0 });
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const { data: faqItems } = useQuery<FaqItem[]>({
+  const { data: faqItems, refetch } = useQuery<FaqItem[]>({
     queryKey: ["/api/admin/faq"],
     queryFn: async () => {
       try {
@@ -45,13 +45,13 @@ export function FaqTab() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/faq"] });
       toast({
         title: editingId ? "Updated" : "Created",
         description: "FAQ item saved successfully",
       });
       setFormData({ question: "", answer: "", displayOrder: 0 });
       setEditingId(null);
+      setTimeout(() => refetch(), 100);
     },
   });
 
@@ -60,8 +60,8 @@ export function FaqTab() {
       return await apiRequest("DELETE", `/api/admin/faq/${id}`, {});
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/faq"] });
       toast({ title: "Deleted", description: "FAQ item removed" });
+      setTimeout(() => refetch(), 100);
     },
   });
 
@@ -70,7 +70,7 @@ export function FaqTab() {
       return await apiRequest("PATCH", `/api/admin/faq/${id}/toggle`, { isActive });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/faq"] });
+      setTimeout(() => refetch(), 100);
     },
   });
 
