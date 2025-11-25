@@ -85,10 +85,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       resave: false,
       saveUninitialized: false,
       cookie: {
-        secure: true, // Always true for HTTPS (production)
+        secure: process.env.NODE_ENV === "production", // HTTPS in production only
         httpOnly: true,
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        sameSite: "none", // Allow cross-domain cookies
+        sameSite: "lax", // Same-origin deployment on Railway
       },
     })
   );
