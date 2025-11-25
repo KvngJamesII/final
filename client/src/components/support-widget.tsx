@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { MessageCircle, X, Send } from "lucide-react";
+import { MessageCircle, X, Send, GripHorizontal } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -13,6 +13,10 @@ export function SupportWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const [position, setPosition] = useState({ x: 24, y: 24 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const sendMutation = useMutation({
     mutationFn: async () => {
@@ -36,12 +40,57 @@ export function SupportWidget() {
     },
   });
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!panelRef.current) return;
+    const rect = panelRef.current.getBoundingClientRect();
+    setIsDragging(true);
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!panelRef.current) return;
+      const newX = e.clientX - dragOffset.x;
+      const newY = e.clientY - dragOffset.y;
+
+      // Keep within viewport
+      const maxX = window.innerWidth - panelRef.current.offsetWidth;
+      const maxY = window.innerHeight - panelRef.current.offsetHeight;
+
+      setPosition({
+        x: Math.max(0, Math.min(newX, maxX)),
+        y: Math.max(0, Math.min(newY, maxY)),
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, dragOffset]);
+
   return (
     <>
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-r from-primary to-accent text-white shadow-lg hover-elevate flex items-center justify-center transition-all"
+        className="fixed z-40 w-14 h-14 rounded-full bg-gradient-to-r from-primary to-accent text-white shadow-lg hover-elevate flex items-center justify-center transition-all"
+        style={{
+          bottom: position.y,
+          right: position.x,
+        }}
         data-testid="button-support-widget"
         aria-label="Open support chat"
       >
@@ -54,14 +103,29 @@ export function SupportWidget() {
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-40 w-96 max-w-[calc(100vw-2rem)] bg-background border rounded-lg shadow-2xl flex flex-col max-h-[600px]">
+        <div
+          ref={panelRef}
+          className="fixed z-40 w-96 max-w-[calc(100vw-2rem)] bg-background border rounded-lg shadow-2xl flex flex-col max-h-[600px]"
+          style={{
+            bottom: position.y + 80,
+            right: position.x,
+          }}
+        >
           {/* Header */}
-          <div className="bg-gradient-to-r from-primary to-accent text-white p-4 rounded-t-lg">
-            <h3 className="font-semibold flex items-center gap-2">
-              <MessageCircle className="w-4 h-4" />
-              Support & Feedback
-            </h3>
-            <p className="text-xs opacity-90 mt-1">Send us your questions or complaints</p>
+          <div
+            className="bg-gradient-to-r from-primary to-accent text-white p-4 rounded-t-lg cursor-move select-none flex items-center justify-between"
+            onMouseDown={handleMouseDown}
+          >
+            <div className="flex items-center gap-2">
+              <GripHorizontal className="w-4 h-4 opacity-70" />
+              <div>
+                <h3 className="font-semibold flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4" />
+                  Support & Feedback
+                </h3>
+                <p className="text-xs opacity-90 mt-1">Send us your questions or complaints</p>
+              </div>
+            </div>
           </div>
 
           {/* Form */}

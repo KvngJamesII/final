@@ -1062,6 +1062,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ====================
+  // FAQ Routes
+  // ====================
+
+  app.get("/api/faqs", async (req: Request, res: Response) => {
+    try {
+      const faqs = await storage.getAllFaqs();
+      res.json(faqs.filter(faq => faq.isActive));
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/admin/faqs", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const faqs = await storage.getAllFaqs();
+      res.json(faqs);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/faqs", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { question, answer, order, isActive } = req.body;
+      if (!question || !answer) {
+        return res.status(400).json({ message: "Question and answer are required" });
+      }
+      const result = await storage.createFaq({
+        question,
+        answer,
+        order: order || 0,
+        isActive: isActive !== undefined ? isActive : true,
+      });
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/admin/faqs/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { question, answer, order, isActive } = req.body;
+      const result = await storage.updateFaq(req.params.id, {
+        question,
+        answer,
+        order,
+        isActive,
+      });
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/admin/faqs/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteFaq(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
 

@@ -17,6 +17,7 @@ import CountryPage from "@/pages/country";
 import Admin from "@/pages/admin";
 import ModDashboard from "@/pages/mod";
 import Maintenance from "@/pages/maintenance";
+import FAQPage from "@/pages/faq";
 
 interface User {
   id: string;
@@ -76,6 +77,7 @@ function Router() {
       {/* Public Routes */}
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
+      <Route path="/faq" component={FAQPage} />
       <Route path="/" component={Home} />
       
       {/* Protected Routes */}

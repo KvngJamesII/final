@@ -13,6 +13,7 @@ import { WalletTab } from "./admin/wallet";
 import { GiftCodesTab } from "./admin/giftcodes";
 import { WelcomeTab } from "./admin/welcome";
 import { SupportTab } from "./admin/support";
+import { FAQsTab } from "./admin/faqs";
 
 export default function Admin() {
   const style = {
@@ -31,6 +32,7 @@ export default function Admin() {
           </header>
           <main className="flex-1 overflow-auto p-6">
             <Switch>
+              <Route path="/admin/faqs" component={FAQsTab} />
               <Route path="/admin/support" component={SupportTab} />
               <Route path="/admin/welcome" component={WelcomeTab} />
               <Route path="/admin/giftcodes" component={GiftCodesTab} />
