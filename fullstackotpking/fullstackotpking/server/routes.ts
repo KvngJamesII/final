@@ -990,6 +990,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ====================
+  // Welcome Message Routes
+  // ====================
+
+  app.get("/api/welcome-message", async (req: Request, res: Response) => {
+    try {
+      const message = await storage.getWelcomeMessage();
+      res.json(message || null);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/welcome-message", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { title, message, isActive } = req.body;
+      const result = await storage.setWelcomeMessage({ title, message, isActive });
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ====================
+  // Support Messages Routes
+  // ====================
+
+  app.get("/api/support-messages", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const messages = await storage.getSupportMessages(req.user!.id);
+      res.json(messages);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/admin/support-messages", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const messages = await storage.getSupportMessages();
+      res.json(messages);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/support-messages", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { subject, message } = req.body;
+      if (!subject || !message) {
+        return res.status(400).json({ message: "Subject and message are required" });
+      }
+      const result = await storage.createSupportMessage({
+        userId: req.user!.id,
+        subject,
+        message,
+      });
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/admin/support-messages/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { status, adminReply } = req.body;
+      const result = await storage.updateSupportMessage(req.params.id, { status, adminReply });
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
 

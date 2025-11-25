@@ -11,6 +11,8 @@ import { NotificationsTab } from "./admin/notifications";
 import { AnnouncementsTab } from "./admin/announcements";
 import { WalletTab } from "./admin/wallet";
 import { GiftCodesTab } from "./admin/giftcodes";
+import { WelcomeTab } from "./admin/welcome";
+import { SupportTab } from "./admin/support";
 
 export default function Admin() {
   const style = {
@@ -29,6 +31,8 @@ export default function Admin() {
           </header>
           <main className="flex-1 overflow-auto p-6">
             <Switch>
+              <Route path="/admin/support" component={SupportTab} />
+              <Route path="/admin/welcome" component={WelcomeTab} />
               <Route path="/admin/giftcodes" component={GiftCodesTab} />
               <Route path="/admin/wallet" component={WalletTab} />
               <Route path="/admin/announcements" component={AnnouncementsTab} />

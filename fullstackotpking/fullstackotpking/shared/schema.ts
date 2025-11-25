@@ -103,6 +103,27 @@ export const settings = pgTable("settings", {
   value: text("value").notNull(),
 });
 
+// Welcome message for new users
+export const welcomeMessage = pgTable("welcome_message", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Support messages
+export const supportMessages = pgTable("support_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  status: text("status").notNull().default("open"), // 'open', 'replied', 'closed'
+  adminReply: text("admin_reply"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   numberHistory: many(numberHistory),
@@ -141,6 +162,13 @@ export const walletTransactionsRelations = relations(walletTransactions, ({ one 
 
 export const giftCodesRelations = relations(giftCodes, ({ many }) => ({
   claims: many(walletTransactions),
+}));
+
+export const supportMessagesRelations = relations(supportMessages, ({ one }) => ({
+  user: one(users, {
+    fields: [supportMessages.userId],
+    references: [users.id],
+  }),
 }));
 
 // Insert schemas
@@ -197,6 +225,17 @@ export const insertGiftCodeSchema = createInsertSchema(giftCodes).omit({
   createdAt: true,
 });
 
+export const insertWelcomeMessageSchema = createInsertSchema(welcomeMessage).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertSupportMessageSchema = createInsertSchema(supportMessages).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -222,6 +261,12 @@ export type Notification = typeof notifications.$inferSelect;
 
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
 export type Setting = typeof settings.$inferSelect;
+
+export type InsertWelcomeMessage = z.infer<typeof insertWelcomeMessageSchema>;
+export type WelcomeMessage = typeof welcomeMessage.$inferSelect;
+
+export type InsertSupportMessage = z.infer<typeof insertSupportMessageSchema>;
+export type SupportMessage = typeof supportMessages.$inferSelect;
 
 // Login schema
 export const loginSchema = z.object({

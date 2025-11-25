@@ -4,6 +4,8 @@ import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SupportWidget } from "@/components/support-widget";
+import { WelcomeModal } from "@/components/welcome-modal";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
@@ -147,6 +149,8 @@ function App() {
       <ThemeProvider>
         <TooltipProvider>
           <Toaster />
+          <WelcomeModal />
+          <SupportWidget />
           <Router />
         </TooltipProvider>
       </ThemeProvider>
