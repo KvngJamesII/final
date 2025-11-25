@@ -78,7 +78,7 @@ export default function Home() {
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Smartphone className="h-5 w-5 text-primary" />
-                <span className="font-semibold">{countries?.reduce((sum, c) => sum + (c.totalNumbers - c.usedNumbers), 0) || 0}+</span>
+                <span className="font-semibold">500k+</span>
                 <span className="text-muted-foreground">Numbers Available</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
@@ -177,9 +177,8 @@ export default function Home() {
                     <div className="mt-auto space-y-2">
                       <div className="flex items-center gap-2 justify-center">
                         <span className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                          {country.totalNumbers - country.usedNumbers}
+                          {country.totalNumbers}
                         </span>
-                        <span className="text-sm opacity-75">/ {country.totalNumbers}</span>
                       </div>
                       <p className="text-xs font-medium bg-primary/20 px-3 py-1 rounded-full backdrop-blur-sm">
                         Numbers Available
