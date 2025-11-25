@@ -219,7 +219,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     passport.authenticate("local", (err: any, user: User, info: any) => {
       if (err) {
-        return res.status(500).json({ message: "Authentication error" });
+        console.error("Auth error:", err);
+        return res.status(500).json({ message: "Authentication error", error: err.message });
       }
       if (!user) {
         return res.status(401).json({ message: info?.message || "Authentication failed" });
@@ -308,7 +309,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const countries = await storage.getCountries();
       res.json(countries);
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      console.error("Countries error:", error);
+      res.status(500).json({ message: error.message, details: error.toString() });
     }
   });
 
