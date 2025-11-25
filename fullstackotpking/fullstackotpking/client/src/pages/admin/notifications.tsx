@@ -99,7 +99,17 @@ export function NotificationsTab() {
         <CardContent>
           <div className="space-y-3">
             {recentNotifications && recentNotifications.length > 0 ? (
-              recentNotifications.slice(0, 10).map((notification) => (
+              recentNotifications
+                .filter(notification => notification.isBroadcast)
+                .reduce((uniqueBroadcasts: Notification[], notification) => {
+                  const exists = uniqueBroadcasts.some(n => n.title === notification.title && n.createdAt === notification.createdAt);
+                  if (!exists) {
+                    uniqueBroadcasts.push(notification);
+                  }
+                  return uniqueBroadcasts;
+                }, [])
+                .slice(0, 10)
+                .map((notification) => (
                 <div key={notification.id} className="p-3 border rounded-lg space-y-1">
                   <div className="font-semibold">{notification.title}</div>
                   <div className="text-sm text-muted-foreground">{notification.message}</div>
