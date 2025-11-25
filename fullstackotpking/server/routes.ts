@@ -676,6 +676,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ====================
+  // Public Welcome Message Routes
+  // ====================
+
+  app.get("/api/welcome-messages", async (req: Request, res: Response) => {
+    try {
+      const messages = await storage.getWelcomeMessages();
+      const activeMessages = messages.filter(msg => msg.isActive);
+      res.json(activeMessages);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ====================
   // Admin Welcome Message Routes
   // ====================
 
