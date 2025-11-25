@@ -73,7 +73,7 @@ export default function Home() {
             <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
               <div className="flex items-center gap-2 text-sm">
                 <Globe className="h-5 w-5 text-primary" />
-                <span className="font-semibold">{countries?.length || 0}+</span>
+                <span className="font-semibold">190+</span>
                 <span className="text-muted-foreground">Countries</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
