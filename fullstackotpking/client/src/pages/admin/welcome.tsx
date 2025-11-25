@@ -23,7 +23,7 @@ export function WelcomeTab() {
   const [formData, setFormData] = useState({ title: "", message: "" });
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const { data: welcomeMessages } = useQuery<WelcomeMessage[]>({
+  const { data: welcomeMessages, refetch } = useQuery<WelcomeMessage[]>({
     queryKey: ["/api/admin/welcome"],
     queryFn: async () => {
       try {
@@ -44,13 +44,13 @@ export function WelcomeTab() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/welcome"] });
       toast({
         title: editingId ? "Updated" : "Created",
         description: "Welcome message saved successfully",
       });
       setFormData({ title: "", message: "" });
       setEditingId(null);
+      setTimeout(() => refetch(), 100);
     },
   });
 
@@ -59,8 +59,8 @@ export function WelcomeTab() {
       return await apiRequest("DELETE", `/api/admin/welcome/${id}`, {});
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/welcome"] });
       toast({ title: "Deleted", description: "Welcome message removed" });
+      setTimeout(() => refetch(), 100);
     },
   });
 
@@ -69,7 +69,7 @@ export function WelcomeTab() {
       return await apiRequest("PATCH", `/api/admin/welcome/${id}/toggle`, { isActive });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/welcome"] });
+      setTimeout(() => refetch(), 100);
     },
   });
 
