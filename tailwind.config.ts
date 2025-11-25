@@ -1,0 +1,1 @@
+fullstackotpking/fullstackotpking/tailwind.config.ts
