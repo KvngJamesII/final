@@ -91,24 +91,24 @@ export default function Home() {
         </div>
       </div>
 
-      <main className="container mx-auto px-4 py-8 md:px-6">
+      <main className="container mx-auto px-4 py-6 sm:py-8 md:px-6">
         {/* Search and Filter */}
-        <div className="mb-8 max-w-2xl mx-auto space-y-4">
+        <div className="mb-6 sm:mb-8 max-w-2xl mx-auto space-y-3 sm:space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search countries..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 h-10 text-base"
               data-testid="input-search"
             />
           </div>
 
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-muted-foreground">Sort by:</span>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <span className="text-xs sm:text-sm font-medium text-muted-foreground">Sort by:</span>
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[180px]" data-testid="select-sort">
+              <SelectTrigger className="w-full sm:w-[180px] h-10 text-sm" data-testid="select-sort">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -122,17 +122,17 @@ export default function Home() {
 
         {/* Country Cards Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[1, 2, 3, 4].map((i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <Card key={i} className="aspect-[4/3] animate-pulse bg-muted" />
             ))}
           </div>
         ) : filteredCountries.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">No countries available</p>
+          <div className="text-center py-12 px-4">
+            <p className="text-muted-foreground text-sm sm:text-base">No countries available</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6" data-testid="countries-grid">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" data-testid="countries-grid">
             {filteredCountries.map((country) => (
               <Link key={country.id} href={`/country/${country.id}`}>
                 <Card 
