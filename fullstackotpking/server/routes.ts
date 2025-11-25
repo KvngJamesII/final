@@ -85,8 +85,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       resave: false,
       saveUninitialized: false,
       cookie: {
-        secure: process.env.NODE_ENV === "production", // HTTPS in production only
-        httpOnly: true,
+        secure: false, // Set to false for now to debug cookie issues
+        httpOnly: false, // Set to false temporarily to debug
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         sameSite: "lax", // Same-origin deployment on Railway
       },
@@ -243,6 +243,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           console.log("Session saved successfully, ID:", req.sessionID);
 
+          // Ensure Set-Cookie header is sent
+          console.log("Response headers before sending:", res.getHeaders());
+          
           // Async operations after login
           (async () => {
             try {
@@ -267,6 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 });
               }
 
+              console.log("Sending login response with cookies");
               res.json({ success: true, isAdmin: user.isAdmin });
             } catch (error) {
               // If anything fails, still allow login but don't send response if already sent
