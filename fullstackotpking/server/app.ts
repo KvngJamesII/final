@@ -36,6 +36,12 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
+// Allow credentials for same-origin requests
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Credentials", "true");
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
