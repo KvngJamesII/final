@@ -189,8 +189,8 @@ export default function CountryPage() {
                         className="group relative w-full rounded-lg hover-elevate transition-all duration-200"
                         data-testid="button-copy-number"
                       >
-                        <div className="p-6 rounded-lg border border-primary/30 bg-background/50 group-hover:border-primary/50">
-                          <p className="font-mono text-5xl md:text-6xl font-bold text-primary mb-3" data-testid="text-phone-number">
+                        <div className="p-4 sm:p-6 rounded-lg border border-primary/30 bg-background/50 group-hover:border-primary/50">
+                          <p className="font-mono text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-primary mb-3" data-testid="text-phone-number">
                             {currentNumber}
                           </p>
                           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground group-hover:text-foreground transition-colors">
