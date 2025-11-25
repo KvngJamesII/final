@@ -8,9 +8,6 @@ import {
   settings,
   walletTransactions,
   giftCodes,
-  welcomeMessage,
-  supportMessages,
-  faqs,
   type User, 
   type InsertUser,
   type Country,
@@ -29,12 +26,6 @@ import {
   type InsertWalletTransaction,
   type GiftCode,
   type InsertGiftCode,
-  type WelcomeMessage,
-  type InsertWelcomeMessage,
-  type SupportMessage,
-  type InsertSupportMessage,
-  type Faq,
-  type InsertFaq,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -92,12 +83,6 @@ export interface IStorage {
   updateGiftCode(id: string, data: Partial<GiftCode>): Promise<GiftCode | undefined>;
   deleteGiftCode(id: string): Promise<void>;
   claimGiftCode(code: string, userId: string): Promise<{ success: boolean; creditsAdded: number }>;
-
-  // FAQ methods
-  getAllFaqs(): Promise<Faq[]>;
-  createFaq(faq: InsertFaq): Promise<Faq>;
-  updateFaq(id: string, data: Partial<Faq>): Promise<Faq | undefined>;
-  deleteFaq(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -305,56 +290,6 @@ export class DatabaseStorage implements IStorage {
     });
 
     return { success: true, creditsAdded: gift.creditsAmount };
-  }
-
-  async getWelcomeMessage(): Promise<WelcomeMessage | undefined> {
-    const [result] = await db.query.welcomeMessage.findMany({ limit: 1 });
-    return result || undefined;
-  }
-
-  async setWelcomeMessage(insertWelcome: InsertWelcomeMessage): Promise<WelcomeMessage> {
-    const [result] = await db.query.welcomeMessage.findMany({ limit: 1 });
-    if (result) {
-      const [updated] = await db.update(welcomeMessage).set(insertWelcome).where(eq(welcomeMessage.id, result.id)).returning();
-      return updated;
-    }
-    const [created] = await db.insert(welcomeMessage).values(insertWelcome).returning();
-    return created;
-  }
-
-  async getSupportMessages(userId?: string): Promise<SupportMessage[]> {
-    if (userId) {
-      return await db.query.supportMessages.findMany({ where: eq(supportMessages.userId, userId) });
-    }
-    return await db.query.supportMessages.findMany();
-  }
-
-  async createSupportMessage(insertSupport: InsertSupportMessage): Promise<SupportMessage> {
-    const [result] = await db.insert(supportMessages).values(insertSupport).returning();
-    return result;
-  }
-
-  async updateSupportMessage(id: string, data: Partial<SupportMessage>): Promise<SupportMessage | undefined> {
-    const [result] = await db.update(supportMessages).set({ ...data, updatedAt: new Date() }).where(eq(supportMessages.id, id)).returning();
-    return result || undefined;
-  }
-
-  async getAllFaqs(): Promise<Faq[]> {
-    return await db.select().from(faqs).orderBy(faqs.order);
-  }
-
-  async createFaq(insertFaq: InsertFaq): Promise<Faq> {
-    const [result] = await db.insert(faqs).values(insertFaq).returning();
-    return result;
-  }
-
-  async updateFaq(id: string, data: Partial<Faq>): Promise<Faq | undefined> {
-    const [result] = await db.update(faqs).set(data).where(eq(faqs.id, id)).returning();
-    return result || undefined;
-  }
-
-  async deleteFaq(id: string): Promise<void> {
-    await db.delete(faqs).where(eq(faqs.id, id));
   }
 }
 

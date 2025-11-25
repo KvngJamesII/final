@@ -4,8 +4,6 @@ import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
-import { SupportWidget } from "@/components/support-widget";
-import { WelcomeModal } from "@/components/welcome-modal";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
@@ -17,7 +15,6 @@ import CountryPage from "@/pages/country";
 import Admin from "@/pages/admin";
 import ModDashboard from "@/pages/mod";
 import Maintenance from "@/pages/maintenance";
-import FAQPage from "@/pages/faq";
 
 interface User {
   id: string;
@@ -77,7 +74,6 @@ function Router() {
       {/* Public Routes */}
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
-      <Route path="/faq" component={FAQPage} />
       <Route path="/" component={Home} />
       
       {/* Protected Routes */}
@@ -151,8 +147,6 @@ function App() {
       <ThemeProvider>
         <TooltipProvider>
           <Toaster />
-          <WelcomeModal />
-          <SupportWidget />
           <Router />
         </TooltipProvider>
       </ThemeProvider>
