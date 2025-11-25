@@ -22,7 +22,7 @@ interface User {
 export function SupportTab() {
   const { toast } = useToast();
 
-  const { data: messages } = useQuery<SupportMessage[]>({
+  const { data: messages, refetch: refetchMessages } = useQuery<SupportMessage[]>({
     queryKey: ["/api/admin/support"],
     queryFn: async () => {
       try {
@@ -55,7 +55,7 @@ export function SupportTab() {
       return await apiRequest("PATCH", `/api/admin/support/${id}/read`, {});
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/support"] });
+      setTimeout(() => refetchMessages(), 100);
     },
   });
 
@@ -64,8 +64,8 @@ export function SupportTab() {
       return await apiRequest("DELETE", `/api/admin/support/${id}`, {});
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/support"] });
       toast({ title: "Deleted", description: "Message removed" });
+      setTimeout(() => refetchMessages(), 100);
     },
   });
 
