@@ -124,6 +124,16 @@ export const supportMessages = pgTable("support_messages", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// FAQ
+export const faqs = pgTable("faqs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  question: text("question").notNull(),
+  answer: text("answer").notNull(),
+  order: integer("order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   numberHistory: many(numberHistory),
@@ -170,6 +180,8 @@ export const supportMessagesRelations = relations(supportMessages, ({ one }) => 
     references: [users.id],
   }),
 }));
+
+export const faqsRelations = relations(faqs, {});
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -236,6 +248,11 @@ export const insertSupportMessageSchema = createInsertSchema(supportMessages).om
   updatedAt: true,
 });
 
+export const insertFaqSchema = createInsertSchema(faqs).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -267,6 +284,9 @@ export type WelcomeMessage = typeof welcomeMessage.$inferSelect;
 
 export type InsertSupportMessage = z.infer<typeof insertSupportMessageSchema>;
 export type SupportMessage = typeof supportMessages.$inferSelect;
+
+export type InsertFaq = z.infer<typeof insertFaqSchema>;
+export type Faq = typeof faqs.$inferSelect;
 
 // Login schema
 export const loginSchema = z.object({

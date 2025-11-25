@@ -10,6 +10,7 @@ import {
   giftCodes,
   welcomeMessage,
   supportMessages,
+  faqs,
   type User, 
   type InsertUser,
   type Country,
@@ -32,6 +33,8 @@ import {
   type InsertWelcomeMessage,
   type SupportMessage,
   type InsertSupportMessage,
+  type Faq,
+  type InsertFaq,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -89,6 +92,12 @@ export interface IStorage {
   updateGiftCode(id: string, data: Partial<GiftCode>): Promise<GiftCode | undefined>;
   deleteGiftCode(id: string): Promise<void>;
   claimGiftCode(code: string, userId: string): Promise<{ success: boolean; creditsAdded: number }>;
+
+  // FAQ methods
+  getAllFaqs(): Promise<Faq[]>;
+  createFaq(faq: InsertFaq): Promise<Faq>;
+  updateFaq(id: string, data: Partial<Faq>): Promise<Faq | undefined>;
+  deleteFaq(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -328,6 +337,24 @@ export class DatabaseStorage implements IStorage {
   async updateSupportMessage(id: string, data: Partial<SupportMessage>): Promise<SupportMessage | undefined> {
     const [result] = await db.update(supportMessages).set({ ...data, updatedAt: new Date() }).where(eq(supportMessages.id, id)).returning();
     return result || undefined;
+  }
+
+  async getAllFaqs(): Promise<Faq[]> {
+    return await db.select().from(faqs).orderBy(faqs.order);
+  }
+
+  async createFaq(insertFaq: InsertFaq): Promise<Faq> {
+    const [result] = await db.insert(faqs).values(insertFaq).returning();
+    return result;
+  }
+
+  async updateFaq(id: string, data: Partial<Faq>): Promise<Faq | undefined> {
+    const [result] = await db.update(faqs).set(data).where(eq(faqs.id, id)).returning();
+    return result || undefined;
+  }
+
+  async deleteFaq(id: string): Promise<void> {
+    await db.delete(faqs).where(eq(faqs.id, id));
   }
 }
 
