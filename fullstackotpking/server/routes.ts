@@ -11,7 +11,7 @@ import rateLimit from "express-rate-limit";
 import axios from "axios";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import { loginSchema, signupSchema, users } from "@shared/schema";
+import { loginSchema, signupSchema, users, notifications, faqItems } from "@shared/schema";
 import type { User, Country } from "@shared/schema";
 import { db, pool } from "./db";
 import { sql, eq } from "drizzle-orm";
@@ -442,21 +442,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Deduct 5 credits only if messages were found
+      // Deduct 10 credits only if messages were found
       if (newMessages > 0) {
-        if (user.credits < 5) {
-          return res.status(400).json({ message: "Insufficient credits to receive SMS. You need 5 credits." });
+        if (user.credits < 10) {
+          return res.status(400).json({ message: "Insufficient credits to receive SMS. You need 10 credits." });
         }
 
         await storage.updateUser(user.id, {
-          credits: user.credits - 5,
+          credits: user.credits - 10,
         });
 
         // Create wallet transaction record for SMS receipt
         await storage.createWalletTransaction({
           userId: user.id,
           type: "sms_charge",
-          amount: -5,
+          amount: -10,
           description: `SMS received on ${phoneNumber}`,
           status: "completed",
         });
@@ -526,6 +526,293 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/notifications/:id/read", requireAuth, async (req: Request, res: Response) => {
     try {
       await storage.markNotificationRead(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/notifications/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      // Only allow deleting own notifications
+      const notification = await db.query.notifications.findFirst({
+        where: sql`${sql.identifier('id')} = ${req.params.id}`,
+      });
+      
+      if (!notification || notification.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Cannot delete this notification" });
+      }
+
+      await db.delete(notifications).where(eq(notifications.id, req.params.id));
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ====================
+  // Welcome Message Routes (Public)
+  // ====================
+
+  app.get("/api/welcome-messages", async (req: Request, res: Response) => {
+    try {
+      const messages = await storage.getWelcomeMessages();
+      const active = messages.find(m => m.isActive);
+      res.json(active || null);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ====================
+  // FAQ Routes (Public)
+  // ====================
+
+  app.get("/api/faq", async (req: Request, res: Response) => {
+    try {
+      const faqs = await storage.getFaqItems();
+      res.json(faqs);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ====================
+  // Support Message Routes (Private)
+  // ====================
+
+  app.get("/api/support-messages", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const messages = await storage.getUserSupportMessages(req.user!.id);
+      res.json(messages);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/support-messages", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { message } = req.body;
+      if (!message) {
+        return res.status(400).json({ message: "Message is required" });
+      }
+
+      const supportMessage = await storage.createSupportMessage({
+        userId: req.user!.id,
+        senderType: "user",
+        message,
+      });
+
+      res.json(supportMessage);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/support-messages/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const message = await db.query.supportMessages.findFirst({
+        where: sql`${sql.identifier('id')} = ${req.params.id}`,
+      });
+
+      if (!message || (message.userId !== req.user!.id && !req.user!.isAdmin)) {
+        return res.status(403).json({ message: "Cannot delete this message" });
+      }
+
+      await storage.deleteSupportMessage(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ====================
+  // Saved Numbers Routes
+  // ====================
+
+  app.get("/api/saved-numbers", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const saved = await storage.getUserSavedNumbers(req.user!.id);
+      res.json(saved);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/saved-numbers", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { countryId, phoneNumber } = req.body;
+      if (!countryId || !phoneNumber) {
+        return res.status(400).json({ message: "Country ID and phone number are required" });
+      }
+
+      const saved = await storage.saveNumber({
+        userId: req.user!.id,
+        countryId,
+        phoneNumber,
+      });
+
+      res.json(saved);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/saved-numbers/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const saved = await db.query.savedNumbers.findFirst({
+        where: sql`${sql.identifier('id')} = ${req.params.id}`,
+      });
+
+      if (!saved || saved.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Cannot delete this saved number" });
+      }
+
+      await storage.deleteSavedNumber(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ====================
+  // Admin Welcome Message Routes
+  // ====================
+
+  app.get("/api/admin/welcome", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const messages = await storage.getWelcomeMessages();
+      res.json(messages);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/welcome", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { title, message } = req.body;
+      const msg = await storage.createWelcomeMessage({ title, message, isActive: true });
+      res.json(msg);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/admin/welcome/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { title, message } = req.body;
+      const msg = await storage.updateWelcomeMessage(req.params.id, { title, message });
+      res.json(msg);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/admin/welcome/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteWelcomeMessage(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/admin/welcome/:id/toggle", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { isActive } = req.body;
+      await storage.updateWelcomeMessage(req.params.id, { isActive });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ====================
+  // Admin FAQ Routes
+  // ====================
+
+  app.get("/api/admin/faq", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const allFaqs = await db.select().from(faqItems).orderBy(faqItems.displayOrder);
+      res.json(allFaqs);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/faq", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { question, answer, displayOrder } = req.body;
+      const faq = await storage.createFaqItem({ question, answer, displayOrder, isActive: true });
+      res.json(faq);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/admin/faq/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { question, answer, displayOrder } = req.body;
+      const faq = await storage.updateFaqItem(req.params.id, { question, answer, displayOrder });
+      res.json(faq);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/admin/faq/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteFaqItem(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/admin/faq/:id/toggle", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { isActive } = req.body;
+      await storage.updateFaqItem(req.params.id, { isActive });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ====================
+  // Admin Support Routes
+  // ====================
+
+  app.get("/api/admin/support", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const messages = await storage.getAllSupportMessages();
+      res.json(messages);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/admin/support/:id/read", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      await storage.markSupportMessageRead(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/admin/support/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteSupportMessage(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/admin/notifications/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      await db.delete(notifications).where(eq(notifications.id, req.params.id));
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ message: error.message });

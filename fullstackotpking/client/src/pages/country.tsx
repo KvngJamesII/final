@@ -4,7 +4,7 @@ import { useRoute, Link } from "wouter";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, History, RefreshCw, Copy, Check, MessageCircle, Zap } from "lucide-react";
+import { ArrowLeft, History, RefreshCw, Copy, Check, MessageCircle, Zap, Bookmark } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -34,6 +34,7 @@ export default function CountryPage() {
   
   const [currentNumber, setCurrentNumber] = useState<string>("");
   const [justCopied, setJustCopied] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   // Extract number without country code (e.g., "+12125551234" with code "+1" -> "2125551234")
   const getNumberWithoutCountryCode = (fullNumber: string, countryCode: string) => {
@@ -118,6 +119,29 @@ export default function CountryPage() {
     },
   });
 
+  const saveNumberMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/saved-numbers", {
+        countryId,
+        phoneNumber: currentNumber,
+      });
+    },
+    onSuccess: () => {
+      setIsSaved(true);
+      toast({
+        title: "Saved!",
+        description: "Number saved to your list",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -193,7 +217,7 @@ export default function CountryPage() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Button
                       onClick={() => getNumberMutation.mutate()}
                       disabled={getNumberMutation.isPending}
@@ -201,6 +225,16 @@ export default function CountryPage() {
                       data-testid="button-next-number"
                     >
                       {getNumberMutation.isPending ? "Loading..." : "Get Another Number"}
+                    </Button>
+                    <Button
+                      onClick={() => saveNumberMutation.mutate()}
+                      disabled={saveNumberMutation.isPending || isSaved}
+                      size="lg"
+                      variant={isSaved ? "outline" : "default"}
+                      data-testid="button-save-number"
+                    >
+                      <Bookmark className="mr-2 h-4 w-4" />
+                      {isSaved ? "Saved" : "Save Number"}
                     </Button>
                   </div>
                 </div>

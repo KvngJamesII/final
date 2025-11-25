@@ -15,6 +15,8 @@ import CountryPage from "@/pages/country";
 import Admin from "@/pages/admin";
 import ModDashboard from "@/pages/mod";
 import Maintenance from "@/pages/maintenance";
+import SavedNumbers from "@/pages/saved-numbers";
+import FaqPage from "@/pages/faq";
 
 interface User {
   id: string;
@@ -99,6 +101,18 @@ function Router() {
             <Wallet />
           </AuthWrapper>
         )}
+      </Route>
+      
+      <Route path="/saved-numbers">
+        {() => (
+          <AuthWrapper>
+            <SavedNumbers />
+          </AuthWrapper>
+        )}
+      </Route>
+      
+      <Route path="/faq">
+        {() => <FaqPage />}
       </Route>
       
       <Route path="/country/:id">

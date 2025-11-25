@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Send } from "lucide-react";
+import { Send, Trash2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -41,6 +41,16 @@ export function NotificationsTab() {
         description: "Your broadcast has been sent to all users",
       });
       setNotificationData({ title: "", message: "" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("DELETE", `/api/admin/notifications/${id}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications"] });
+      toast({ title: "Deleted", description: "Notification removed" });
     },
   });
 
@@ -110,12 +120,23 @@ export function NotificationsTab() {
                 }, [])
                 .slice(0, 10)
                 .map((notification) => (
-                <div key={notification.id} className="p-3 border rounded-lg space-y-1">
-                  <div className="font-semibold">{notification.title}</div>
-                  <div className="text-sm text-muted-foreground">{notification.message}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(notification.createdAt).toLocaleString()}
+                <div key={notification.id} className="flex items-start justify-between p-3 border rounded-lg space-y-1" data-testid={`notification-item-${notification.id}`}>
+                  <div className="flex-1">
+                    <div className="font-semibold">{notification.title}</div>
+                    <div className="text-sm text-muted-foreground">{notification.message}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(notification.createdAt).toLocaleString()}
+                    </div>
                   </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => deleteMutation.mutate(notification.id)}
+                    disabled={deleteMutation.isPending}
+                    data-testid={`button-delete-${notification.id}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               ))
             ) : (

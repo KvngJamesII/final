@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Gift } from "lucide-react";
+import { Gift, Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,7 @@ export default function Signup() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
@@ -133,7 +134,7 @@ export default function Signup() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm">Email (Optional)</FormLabel>
+                        <FormLabel className="text-sm">Email</FormLabel>
                         <FormControl>
                           <Input 
                             type="email"
@@ -155,13 +156,27 @@ export default function Signup() {
                       <FormItem>
                         <FormLabel className="text-sm">Password</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="password" 
-                            placeholder="Create a strong password"
-                            data-testid="input-password"
-                            className="h-10 text-base"
-                            {...field} 
-                          />
+                          <div className="relative">
+                            <Input 
+                              type={showPassword ? "text" : "password"} 
+                              placeholder="Create a strong password"
+                              data-testid="input-password"
+                              className="h-10 text-base pr-10"
+                              {...field} 
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                              data-testid="button-toggle-password"
+                            >
+                              {showPassword ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
                         </FormControl>
                         <FormMessage className="text-xs" />
                       </FormItem>

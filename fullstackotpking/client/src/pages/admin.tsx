@@ -11,6 +11,9 @@ import { NotificationsTab } from "./admin/notifications";
 import { AnnouncementsTab } from "./admin/announcements";
 import { WalletTab } from "./admin/wallet";
 import { GiftCodesTab } from "./admin/giftcodes";
+import { WelcomeTab } from "./admin/welcome";
+import { SupportTab } from "./admin/support";
+import { FaqTab } from "./admin/faq";
 
 export default function Admin() {
   const style = {
@@ -33,6 +36,9 @@ export default function Admin() {
               <Route path="/admin/wallet" component={WalletTab} />
               <Route path="/admin/announcements" component={AnnouncementsTab} />
               <Route path="/admin/notifications" component={NotificationsTab} />
+              <Route path="/admin/faq" component={FaqTab} />
+              <Route path="/admin/support" component={SupportTab} />
+              <Route path="/admin/welcome" component={WelcomeTab} />
               <Route path="/admin/moderators" component={ModeratorsTab} />
               <Route path="/admin/users" component={UsersTab} />
               <Route path="/admin/api" component={ApiSettingsTab} />

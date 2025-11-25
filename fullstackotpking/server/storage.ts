@@ -8,6 +8,10 @@ import {
   settings,
   walletTransactions,
   giftCodes,
+  welcomeMessages,
+  supportMessages,
+  faqItems,
+  savedNumbers,
   type User, 
   type InsertUser,
   type Country,
@@ -26,6 +30,14 @@ import {
   type InsertWalletTransaction,
   type GiftCode,
   type InsertGiftCode,
+  type WelcomeMessage,
+  type InsertWelcomeMessage,
+  type SupportMessage,
+  type InsertSupportMessage,
+  type FaqItem,
+  type InsertFaqItem,
+  type SavedNumber,
+  type InsertSavedNumber,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -83,6 +95,31 @@ export interface IStorage {
   updateGiftCode(id: string, data: Partial<GiftCode>): Promise<GiftCode | undefined>;
   deleteGiftCode(id: string): Promise<void>;
   claimGiftCode(code: string, userId: string): Promise<{ success: boolean; creditsAdded: number }>;
+
+  // Welcome message methods
+  getWelcomeMessages(): Promise<WelcomeMessage[]>;
+  createWelcomeMessage(message: InsertWelcomeMessage): Promise<WelcomeMessage>;
+  updateWelcomeMessage(id: string, data: Partial<WelcomeMessage>): Promise<WelcomeMessage | undefined>;
+  deleteWelcomeMessage(id: string): Promise<void>;
+
+  // Support message methods
+  getUserSupportMessages(userId: string): Promise<SupportMessage[]>;
+  getAllSupportMessages(): Promise<SupportMessage[]>;
+  createSupportMessage(message: InsertSupportMessage): Promise<SupportMessage>;
+  markSupportMessageRead(id: string): Promise<void>;
+  deleteSupportMessage(id: string): Promise<void>;
+
+  // FAQ methods
+  getFaqItems(): Promise<FaqItem[]>;
+  createFaqItem(faq: InsertFaqItem): Promise<FaqItem>;
+  updateFaqItem(id: string, data: Partial<FaqItem>): Promise<FaqItem | undefined>;
+  deleteFaqItem(id: string): Promise<void>;
+
+  // Saved number methods
+  getUserSavedNumbers(userId: string): Promise<(SavedNumber & { country?: Country })[]>;
+  saveNumber(savedNumber: InsertSavedNumber): Promise<SavedNumber>;
+  deleteSavedNumber(id: string): Promise<void>;
+  isSavedNumber(userId: string, phoneNumber: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -290,6 +327,108 @@ export class DatabaseStorage implements IStorage {
     });
 
     return { success: true, creditsAdded: gift.creditsAmount };
+  }
+
+  // Welcome message methods
+  async getWelcomeMessages(): Promise<WelcomeMessage[]> {
+    return await db.select().from(welcomeMessages).orderBy(desc(welcomeMessages.createdAt));
+  }
+
+  async createWelcomeMessage(message: InsertWelcomeMessage): Promise<WelcomeMessage> {
+    const [result] = await db.insert(welcomeMessages).values(message).returning();
+    return result;
+  }
+
+  async updateWelcomeMessage(id: string, data: Partial<WelcomeMessage>): Promise<WelcomeMessage | undefined> {
+    const [result] = await db.update(welcomeMessages).set(data).where(eq(welcomeMessages.id, id)).returning();
+    return result || undefined;
+  }
+
+  async deleteWelcomeMessage(id: string): Promise<void> {
+    await db.delete(welcomeMessages).where(eq(welcomeMessages.id, id));
+  }
+
+  // Support message methods
+  async getUserSupportMessages(userId: string): Promise<SupportMessage[]> {
+    return await db.select().from(supportMessages).where(eq(supportMessages.userId, userId)).orderBy(desc(supportMessages.createdAt));
+  }
+
+  async getAllSupportMessages(): Promise<SupportMessage[]> {
+    return await db.select().from(supportMessages).orderBy(desc(supportMessages.createdAt));
+  }
+
+  async createSupportMessage(message: InsertSupportMessage): Promise<SupportMessage> {
+    const [result] = await db.insert(supportMessages).values(message).returning();
+    return result;
+  }
+
+  async markSupportMessageRead(id: string): Promise<void> {
+    await db.update(supportMessages).set({ isRead: true }).where(eq(supportMessages.id, id));
+  }
+
+  async deleteSupportMessage(id: string): Promise<void> {
+    await db.delete(supportMessages).where(eq(supportMessages.id, id));
+  }
+
+  // FAQ methods
+  async getFaqItems(): Promise<FaqItem[]> {
+    return await db.select().from(faqItems).where(eq(faqItems.isActive, true)).orderBy(faqItems.displayOrder);
+  }
+
+  async createFaqItem(faq: InsertFaqItem): Promise<FaqItem> {
+    const [result] = await db.insert(faqItems).values(faq).returning();
+    return result;
+  }
+
+  async updateFaqItem(id: string, data: Partial<FaqItem>): Promise<FaqItem | undefined> {
+    const [result] = await db.update(faqItems).set(data).where(eq(faqItems.id, id)).returning();
+    return result || undefined;
+  }
+
+  async deleteFaqItem(id: string): Promise<void> {
+    await db.delete(faqItems).where(eq(faqItems.id, id));
+  }
+
+  // Saved number methods
+  async getUserSavedNumbers(userId: string): Promise<(SavedNumber & { country?: Country })[]> {
+    const saved = await db.select().from(savedNumbers).where(eq(savedNumbers.userId, userId)).orderBy(desc(savedNumbers.savedAt));
+    
+    const enriched = await Promise.all(
+      saved.map(async (item) => {
+        const country = await this.getCountry(item.countryId);
+        return {
+          ...item,
+          country: country ? {
+            id: country.id,
+            name: country.name,
+            code: country.code,
+            flagUrl: country.flagUrl,
+            totalNumbers: country.totalNumbers,
+            usedNumbers: country.usedNumbers,
+            numbersFile: country.numbersFile,
+            createdAt: country.createdAt,
+          } : undefined,
+        };
+      })
+    );
+    
+    return enriched;
+  }
+
+  async saveNumber(savedNumber: InsertSavedNumber): Promise<SavedNumber> {
+    const [result] = await db.insert(savedNumbers).values(savedNumber).returning();
+    return result;
+  }
+
+  async deleteSavedNumber(id: string): Promise<void> {
+    await db.delete(savedNumbers).where(eq(savedNumbers.id, id));
+  }
+
+  async isSavedNumber(userId: string, phoneNumber: string): Promise<boolean> {
+    const [result] = await db.select().from(savedNumbers).where(
+      and(eq(savedNumbers.userId, userId), eq(savedNumbers.phoneNumber, phoneNumber))
+    );
+    return !!result;
   }
 }
 
