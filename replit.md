@@ -2,7 +2,9 @@
 
 ## Overview
 
-OTP King is a fullstack web application that provides virtual phone numbers for SMS verification and OTP reception. The platform operates as a unified service where users can browse virtual numbers by country, receive SMS messages on temporary numbers, manage credits, and use a referral system. The application includes separate interfaces for regular users, moderators, and administrators, with comprehensive wallet and payment integration through Paystack.
+OTP King is a comprehensive fullstack web application that provides virtual phone numbers for SMS verification and OTP reception. The platform allows users to browse virtual numbers by country, receive SMS messages, manage credits through a wallet system, and earn rewards through referrals. Administrators and moderators can upload and manage phone number pools, configure API integrations, and monitor system activity.
+
+The application is designed as a unified fullstack service that can be deployed as a single service on platforms like Railway, with both frontend and backend served from the same Express server.
 
 ## User Preferences
 
@@ -10,151 +12,166 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Application Structure
+### Fullstack Architecture Pattern
 
-**Monolithic Fullstack Architecture**: The application is built as a single unified service combining frontend and backend, deployed together rather than as separate services. This eliminates CORS issues and simplifies deployment on platforms like Railway.
+**Unified Service Design**: The application uses a single-service architecture where both frontend and backend are bundled and served together. This eliminates CORS issues and simplifies deployment.
 
-- **Development Mode**: Vite dev server with HMR for the React frontend, Express API server with hot reload
-- **Production Mode**: Express serves both the built static React files and API endpoints from a single process
+- **Development Mode**: Vite dev server with HMR runs alongside Express API server
+- **Production Mode**: Frontend is built as static files and served by Express from the `dist` folder
+- **Rationale**: Simplifies deployment, reduces infrastructure complexity, and avoids cross-origin issues since everything runs on the same domain
 
 ### Frontend Architecture
 
-**React SPA with TypeScript**: The client is a single-page application using modern React patterns.
+**Technology Stack**:
+- React 18 with TypeScript for type safety
+- Vite as the build tool for fast HMR and optimized production builds
+- TanStack Query (React Query) for server state management and caching
+- Wouter for lightweight client-side routing
+- React Hook Form with Zod for type-safe form validation
 
-- **Build Tool**: Vite with React plugin for fast HMR and optimized production builds
-- **Routing**: Wouter for lightweight client-side routing (alternative to React Router)
-- **State Management**: 
-  - TanStack Query (React Query) for server state management, caching, and data synchronization
-  - React Hook Form for form state with Zod validation schemas
-- **UI Framework**: shadcn/ui component library built on Radix UI primitives
-- **Styling**: Tailwind CSS with custom design tokens for theming
-- **Icons**: Lucide React icon library
+**UI Component System**:
+- shadcn/ui component library built on Radix UI primitives
+- Tailwind CSS for utility-first styling with custom design tokens
+- Custom theming system supporting light/dark modes
+- CSS variables for dynamic theming (`--primary`, `--background`, etc.)
 
-**Design System**: Custom CSS variables in `index.css` define a complete design system with light/dark mode support, including color tokens, spacing, shadows, and typography scales.
+**State Management Strategy**:
+- Server state managed by TanStack Query with query keys matching API endpoints
+- Local UI state managed with React hooks (useState, useEffect)
+- No global state management library needed due to server-state-first approach
+- Query client configured with credentials for session-based auth
 
 ### Backend Architecture
 
-**Express.js API Server**: RESTful API built with Node.js and TypeScript.
+**Express Server Design**:
+- Two server entry points: `index-dev.ts` (development) and `index-prod.ts` (production)
+- Middleware stack: JSON parsing, URL encoding, CORS headers for credentials
+- Custom logging middleware that captures request/response timing and status
+- Session-based authentication with no JWT complexity
 
-- **Authentication**: Session-based authentication using JWT tokens stored in HTTP-only cookies (no localStorage)
-- **Password Security**: bcrypt for password hashing with salt rounds
-- **Rate Limiting**: Express rate limiter to prevent abuse on sensitive endpoints
-- **Request Validation**: Zod schemas for runtime type checking and validation
+**API Route Organization**:
+- All routes defined in `server/routes.ts`
+- RESTful endpoint design (`/api/auth/*`, `/api/countries/*`, `/api/wallet/*`, etc.)
+- Role-based middleware: `requireAuth`, `requireAdmin`, `requireModerator`
+- Rate limiting on sensitive endpoints to prevent abuse
 
-**Storage Layer**: In-memory storage interface (`storage.ts`) abstracts database operations, making it easy to swap implementations.
+**Database Layer**:
+- Drizzle ORM for type-safe database queries
+- PostgreSQL as the database (Neon serverless in production)
+- Schema-first design with migrations managed by Drizzle Kit
+- Connection pooling via `node-postgres` for efficient connection management
 
-- Current implementation uses Drizzle ORM with PostgreSQL
-- All database queries go through the storage interface methods
-- Supports transactions, relations, and complex queries
+**Data Storage Pattern**:
+- Storage abstraction layer (`server/storage.ts`) provides interface for data operations
+- All database queries go through the storage layer for consistency
+- Phone numbers stored as newline-separated text in `numbersFile` field (not individual rows)
+- Rationale: Simplifies bulk import/export and reduces database row count for large number pools
 
-### Database Architecture
+### Authentication & Authorization
 
-**PostgreSQL with Drizzle ORM**: Type-safe SQL query builder and schema management.
+**Session-Based Authentication**:
+- Passport.js with LocalStrategy for username/password login
+- express-session with connect-pg-simple for PostgreSQL-backed sessions
+- Session cookies with HTTP-only flag for security
+- IP tracking for user registration and fraud prevention
 
-- **Schema Definition**: Single source of truth in `shared/schema.ts` using Drizzle's schema builder
-- **Migrations**: Managed through drizzle-kit with migration files in `migrations/` directory
-- **Database Provider**: Neon serverless PostgreSQL for production (connection pooling built-in)
-- **Connection**: Node.js pg driver with connection pooling
+**Authorization Hierarchy**:
+- Regular users: Access to numbers, wallet, referrals
+- Moderators: Upload numbers, view statistics
+- Admins: Full system control including user management and API settings
 
-**Key Tables**:
-- `users`: User accounts with credits, referral codes, roles (admin/moderator), ban status
-- `countries`: Available countries with phone number pools stored as newline-separated text
-- `number_history`: Tracks which users have used which phone numbers
-- `sms_messages`: Stores received SMS messages linked to phone numbers
-- `announcements`: System-wide announcements shown in a banner
-- `notifications`: User notifications and broadcast messages
-- `settings`: Key-value store for application configuration
-- `wallet_transactions`: Payment and credit transaction history
-- `gift_codes`: Redeemable codes for credits
+### Database Schema Design
 
-### Role-Based Access Control
+**Core Tables**:
+- `users`: User accounts with credits, referral codes, roles, and ban status
+- `countries`: Phone number pools by country with total/used counts
+- `numberHistory`: Tracks which users have used which numbers
+- `smsMessages`: Stores received SMS messages per phone number
+- `walletTransactions`: Credit purchases and usage tracking
+- `giftCodes`: Redeemable codes for free credits
+- `announcements`: Platform-wide announcements with active/inactive status
+- `notifications`: Per-user and broadcast notifications
 
-**Three User Levels**:
-- **Regular Users**: Browse numbers, receive SMS, manage wallet, use referral system
-- **Moderators**: Upload phone numbers by country, view system statistics (subset of admin features)
-- **Administrators**: Full system control including user management, API configuration, maintenance mode, gift codes
+**Key Design Decisions**:
+- UUIDs as primary keys for better scalability
+- Soft deletes avoided; hard deletes with CASCADE for clean data
+- Timestamps on all tables for audit trails
+- Referential integrity enforced via foreign key constraints
 
-**Implementation**: Role checks implemented at both route level (middleware) and UI level (conditional rendering).
+### SMS Integration Architecture
+
+**Number Assignment Strategy**:
+- Numbers retrieved sequentially from newline-separated file stored in database
+- Used numbers tracked in `numberHistory` table
+- `usedNumbers` counter incremented when number is assigned
+- Numbers can be reused after a period (not enforced at schema level)
+
+**Message Reception**:
+- External SMS API webhooks write to `smsMessages` table
+- Messages filtered by phone number for user display
+- Real-time updates via polling (not WebSockets for simplicity)
+- Auto-refresh feature in UI for continuous polling
 
 ### Payment Integration
 
-**Paystack Gateway**: Credit purchases through Paystack's inline payment widget.
+**Paystack Integration**:
+- Client-side Paystack inline checkout
+- Server-side payment verification via Paystack API
+- Transaction recording in `walletTransactions` table
+- Credit allocation only after successful verification
+- Webhook support for payment status updates
 
-- Frontend loads Paystack SDK via CDN script tag in `index.html`
-- Backend verifies payment webhooks and transaction references
-- Wallet transactions table records all credit movements (purchases, usage, referrals)
+### Admin & Moderator Features
 
-### File Upload & Number Management
+**Number Management**:
+- Bulk upload via CSV or text file
+- Country-based organization
+- Statistics dashboard showing usage patterns
+- Delete functionality for cleaning up old pools
 
-**Phone Number Storage**: Numbers stored as newline-separated text files within the database (text column).
+**User Management** (Admin only):
+- Ban/unban user accounts
+- View user activity and transaction history
+- Promote users to moderator role
+- Manage gift codes and pricing
 
-- Admin/moderator uploads CSV/text files of phone numbers
-- Numbers parsed and stored in `countries.numbersFile` field
-- System tracks total vs. used numbers per country
-- Used numbers marked in `number_history` to prevent reuse
-
-### Maintenance Mode
-
-**System-Wide Toggle**: Administrators can enable maintenance mode through settings.
-
-- When enabled, shows maintenance page to all non-admin users
-- Implemented via `settings` table with key-value lookup
-- Frontend checks maintenance status and redirects accordingly
-
-### API Design Patterns
-
-**RESTful Endpoints**: Standard REST conventions with clear resource naming.
-
-- `/api/auth/*` - Authentication (login, signup, logout, session)
-- `/api/countries/*` - Country and number management
-- `/api/history` - User's number usage history
-- `/api/sms/*` - SMS message retrieval
-- `/api/wallet/*` - Credit purchases and transactions
-- `/api/notifications/*` - User notifications
-- `/api/admin/*` - Administrative functions
-
-**Error Handling**: Consistent error responses with appropriate HTTP status codes and descriptive messages.
+**System Configuration**:
+- Maintenance mode toggle
+- API settings for external integrations
+- Notification broadcasting
+- Announcement management
 
 ## External Dependencies
 
-### Third-Party Services
+### Database
+- **PostgreSQL (Neon)**: Primary database for all persistent data
+- **Connection**: Via `DATABASE_URL` environment variable
+- **ORM**: Drizzle ORM for type-safe queries and migrations
 
-**Neon PostgreSQL**: Serverless PostgreSQL database with automatic scaling and connection pooling. Connection configured via `DATABASE_URL` environment variable.
+### Payment Processing
+- **Paystack**: Payment gateway for credit purchases
+- **Integration**: Client-side inline checkout with server-side verification
+- **Webhook**: `/api/wallet/paystack/webhook` for payment status updates
 
-**Paystack**: Payment gateway for credit purchases. Requires Paystack public and secret keys configured in environment variables.
+### Authentication
+- **Passport.js**: Authentication middleware with LocalStrategy
+- **Session Store**: PostgreSQL-backed sessions via connect-pg-simple
+- **Security**: bcrypt for password hashing
 
-### Key NPM Packages
+### SMS Services
+- No specific SMS provider hardcoded; designed for flexibility
+- Admin configurable API settings in database
+- Expected webhook integration for incoming messages
 
-**Backend**:
-- `express` - HTTP server framework
-- `drizzle-orm` - Type-safe ORM for PostgreSQL
-- `bcrypt` - Password hashing
-- `jsonwebtoken` - JWT token generation
-- `express-rate-limit` - API rate limiting
-- `axios` - HTTP client for external API calls
-- `zod` - Schema validation
+### Frontend Libraries
+- **Radix UI**: Headless component primitives for accessibility
+- **Tailwind CSS**: Utility-first CSS framework
+- **Lucide React**: Icon library
+- **React Hook Form**: Form state management
+- **Zod**: Runtime type validation
 
-**Frontend**:
-- `react` - UI framework
-- `@tanstack/react-query` - Server state management
-- `wouter` - Client-side routing
-- `react-hook-form` - Form state management
-- `@radix-ui/*` - Unstyled accessible UI primitives
-- `tailwindcss` - Utility-first CSS framework
-- `class-variance-authority` - Component variant styling
-- `lucide-react` - Icon library
-
-**Build Tools**:
-- `vite` - Frontend build tool and dev server
-- `typescript` - Type safety
-- `tsx` - TypeScript execution for Node.js
-- `drizzle-kit` - Database migration tool
-
-### Environment Configuration
-
-Required environment variables:
-- `DATABASE_URL` - PostgreSQL connection string
-- `SESSION_SECRET` - JWT signing secret
-- `NODE_ENV` - Environment (development/production)
-- `PORT` - Server port (default 3000)
-- Paystack credentials for payment processing
+### Build & Development Tools
+- **Vite**: Frontend build tool and dev server
+- **TypeScript**: Type safety across frontend and backend
+- **tsx**: TypeScript execution for Node.js
+- **Drizzle Kit**: Database migration management
