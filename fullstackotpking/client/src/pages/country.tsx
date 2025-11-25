@@ -141,9 +141,9 @@ export default function CountryPage() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="container mx-auto px-4 py-8 md:px-6">
+      <main className="w-full px-4 py-6 sm:py-8 md:px-6">
         {/* Top Navigation */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6 sm:mb-8 max-w-5xl mx-auto">
           <Link href="/">
             <Button variant="outline" size="sm" data-testid="button-back">
               <ArrowLeft className="mr-2 h-4 w-4" />

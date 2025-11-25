@@ -141,7 +141,7 @@ export default function Wallet() {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="container mx-auto px-4 py-8 md:px-6">
+      <main className="w-full px-4 py-6 sm:py-8 md:px-6">
         <div className="space-y-8">
           {/* Balance Card */}
           <Card className="bg-gradient-to-br from-primary/10 via-accent/10 to-secondary/10 border-primary/20">

@@ -30,8 +30,8 @@ export default function History() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="container mx-auto px-4 py-8 md:px-6">
-        <div className="max-w-3xl mx-auto space-y-6">
+      <main className="w-full px-4 py-6 sm:py-8 md:px-6">
+        <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
           <div className="flex items-center gap-4">
             <Link href="/">
               <Button variant="outline" size="sm" data-testid="button-back">

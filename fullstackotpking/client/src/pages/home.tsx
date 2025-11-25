@@ -91,9 +91,9 @@ export default function Home() {
         </div>
       </div>
 
-      <main className="container mx-auto px-4 py-6 sm:py-8 md:px-6">
+      <main className="w-full px-4 py-6 sm:py-8 md:px-6">
         {/* Search and Filter */}
-        <div className="mb-6 sm:mb-8 max-w-2xl mx-auto space-y-3 sm:space-y-4">
+        <div className="mb-6 sm:mb-8 w-full max-w-4xl mx-auto space-y-3 sm:space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
