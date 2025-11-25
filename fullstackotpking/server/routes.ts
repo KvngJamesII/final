@@ -11,10 +11,10 @@ import rateLimit from "express-rate-limit";
 import axios from "axios";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import { loginSchema, signupSchema } from "@shared/schema";
+import { loginSchema, signupSchema, users } from "@shared/schema";
 import type { User, Country } from "@shared/schema";
 import { db, pool } from "./db";
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 
 // Extend Express Request to include user
 declare global {
