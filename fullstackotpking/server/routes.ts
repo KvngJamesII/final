@@ -226,16 +226,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: info?.message || "Authentication failed" });
       }
 
+      console.log("User authenticated:", user.id, user.username);
       req.login(user, (loginErr) => {
         if (loginErr) {
+          console.error("Login error:", loginErr);
           return res.status(500).json({ message: "Login failed" });
         }
 
+        console.log("Session ID after login:", req.sessionID);
+        console.log("Session contents:", req.session);
         // Save session explicitly before responding
         req.session.save((saveErr) => {
           if (saveErr) {
+            console.error("Session save error:", saveErr);
             return res.status(500).json({ message: "Failed to save session" });
           }
+          console.log("Session saved successfully, ID:", req.sessionID);
 
           // Async operations after login
           (async () => {
@@ -283,7 +289,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  app.get("/api/auth/me", requireAuth, (req: Request, res: Response) => {
+  app.get("/api/auth/me", (req: Request, res: Response) => {
+    console.log("GET /api/auth/me - SessionID:", req.sessionID);
+    console.log("GET /api/auth/me - isAuthenticated:", req.isAuthenticated());
+    console.log("GET /api/auth/me - user:", req.user);
+    console.log("GET /api/auth/me - session:", req.session);
+    
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
     res.json(req.user);
   });
 
