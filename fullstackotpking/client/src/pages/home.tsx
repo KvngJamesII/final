@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/header";
 import { AnnouncementBanner } from "@/components/announcement-banner";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Globe, Smartphone, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, Globe, Smartphone, Zap, X } from "lucide-react";
 import { Link } from "wouter";
 
 interface Country {
@@ -18,12 +19,25 @@ interface Country {
   createdAt: string;
 }
 
+interface WelcomeMessage {
+  id: string;
+  title: string;
+  message: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest");
+  const [dismissedWelcome, setDismissedWelcome] = useState(false);
 
   const { data: countries, isLoading } = useQuery<Country[]>({
     queryKey: ["/api/countries"],
+  });
+
+  const { data: welcomeMessages } = useQuery<WelcomeMessage[]>({
+    queryKey: ["/api/welcome-messages"],
   });
 
   const filteredCountries = countries
@@ -48,6 +62,32 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <Header />
       <AnnouncementBanner />
+
+      {/* Welcome Messages */}
+      {!dismissedWelcome && welcomeMessages && welcomeMessages.length > 0 && (
+        <div className="border-b bg-accent/5">
+          <div className="container mx-auto px-4 py-4">
+            {welcomeMessages.map((welcome) => (
+              <div key={welcome.id} className="relative" data-testid={`welcome-banner-${welcome.id}`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-foreground">{welcome.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{welcome.message}</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setDismissedWelcome(true)}
+                    data-testid="button-dismiss-welcome"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Hero Section */}
       <div className="relative overflow-hidden border-b bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5">
