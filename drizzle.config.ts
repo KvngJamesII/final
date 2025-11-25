@@ -1,1 +1,0 @@
-fullstackotpking/fullstackotpking/drizzle.config.ts
